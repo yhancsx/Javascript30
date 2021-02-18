@@ -1,55 +1,66 @@
 let countdown;
-const timerDisplay = document.querySelector('.display__time-left');
-const endTime = document.querySelector('.display__end-time');
-const buttons = document.querySelectorAll('[data-time]');
+const timerDisplay = document.querySelector(".display__time-left");
+const endTime = document.querySelector(".display__end-time");
+const buttons = document.querySelectorAll("[data-time]");
+const form = document.querySelector("form#custom");
+
+let interval;
 
 function timer(seconds) {
-  // clear any existing timers
-  clearInterval(countdown);
+  clearInterval(interval);
 
   const now = Date.now();
   const then = now + seconds * 1000;
-  displayTimeLeft(seconds);
+
   displayEndTime(then);
 
-  countdown = setInterval(() => {
-    const secondsLeft = Math.round((then - Date.now()) / 1000);
-    // check if we should stop it!
-    if(secondsLeft < 0) {
-      clearInterval(countdown);
-      return;
-    }
-    // display it
-    displayTimeLeft(secondsLeft);
+  let remain = seconds;
+  displayRemainTime(remain);
+
+  interval = setInterval(() => {
+    remain = Math.round((then - Date.now()) / 1000);
+    displayRemainTime(remain);
+    if (remain <= 0) clearInterval(interval);
   }, 1000);
 }
 
-function displayTimeLeft(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const remainderSeconds = seconds % 60;
-  const display = `${minutes}:${remainderSeconds < 10 ? '0' : '' }${remainderSeconds}`;
-  document.title = display;
-  timerDisplay.textContent = display;
+function paddingNumber(number) {
+  if (number < 10) return `0${number}`;
+  return number;
 }
 
-function displayEndTime(timestamp) {
-  const end = new Date(timestamp);
-  const hour = end.getHours();
-  const adjustedHour = hour > 12 ? hour - 12 : hour;
-  const minutes = end.getMinutes();
-  endTime.textContent = `Be Back At ${adjustedHour}:${minutes < 10 ? '0' : ''}${minutes}`;
+function displayRemainTime(seconds) {
+  const str = formatRemainTime(seconds);
+  document.title = str;
+  timerDisplay.textContent = str;
 }
 
-function startTimer() {
-  const seconds = parseInt(this.dataset.time);
-  timer(seconds);
+function formatRemainTime(seconds) {
+  const hour = Math.floor(seconds / (60 * 60));
+  const minute = Math.floor((seconds % (60 * 60)) / 60);
+  const second = seconds % 60;
+  const str = [hour, minute, second].map((v) => paddingNumber(v)).join(":");
+  return str;
 }
 
-buttons.forEach(button => button.addEventListener('click', startTimer));
-document.customForm.addEventListener('submit', function(e) {
+function displayEndTime(seconds) {
+  const end = new Date(seconds);
+
+  const endHour = end.getHours();
+  const endMinute = end.getMinutes();
+  const endString = `Be Back At ${paddingNumber(endHour)}:${paddingNumber(endMinute)}`;
+  endTime.textContent = endString;
+}
+
+form.addEventListener("submit", function (e) {
   e.preventDefault();
-  const mins = this.minutes.value;
-  console.log(mins);
-  timer(mins * 60);
+  const seconds = e.target.minutes.value;
   this.reset();
+  if (isNaN(seconds)) return;
+  timer(seconds);
+});
+
+buttons.forEach((button) => {
+  const seconds = button.dataset.time;
+  button.addEventListener("click", () => timer(+seconds));
 });
